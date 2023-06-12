@@ -23,8 +23,6 @@ class SearchableDropdown<T> extends StatefulWidget {
     T? value,
     bool isEnabled = true,
     VoidCallback? disabledOnTap,
-    double? width,
-    bool isDialogExpanded = true,
   }) : this._(
           key: key,
           hintText: hintText,
@@ -41,8 +39,6 @@ class SearchableDropdown<T> extends StatefulWidget {
           value: value,
           isEnabled: isEnabled,
           disabledOnTap: disabledOnTap,
-          width: width,
-          isDialogExpanded: isDialogExpanded,
         );
 
   const SearchableDropdown.paginated({
@@ -65,9 +61,7 @@ class SearchableDropdown<T> extends StatefulWidget {
     void Function(T?)? onChanged,
     bool isEnabled = true,
     VoidCallback? disabledOnTap,
-    Duration? changeCompletionDelay,
-    double? width,
-    bool isDialogExpanded = true,
+    SearchableDropdownMenuItem<T>? initialValue,
   }) : this._(
           key: key,
           paginatedRequest: paginatedRequest,
@@ -84,9 +78,7 @@ class SearchableDropdown<T> extends StatefulWidget {
           onChanged: onChanged,
           isEnabled: isEnabled,
           disabledOnTap: disabledOnTap,
-          changeCompletionDelay: changeCompletionDelay,
-          width: width,
-          isDialogExpanded: isDialogExpanded,
+          initialValue: initialValue,
         );
 
   const SearchableDropdown.future({
@@ -105,9 +97,7 @@ class SearchableDropdown<T> extends StatefulWidget {
     void Function(T?)? onChanged,
     bool isEnabled = true,
     VoidCallback? disabledOnTap,
-    Duration? changeCompletionDelay,
-    double? width,
-    bool isDialogExpanded = true,
+    SearchableDropdownMenuItem<T>? initialValue,
   }) : this._(
           futureRequest: futureRequest,
           key: key,
@@ -123,9 +113,7 @@ class SearchableDropdown<T> extends StatefulWidget {
           onChanged: onChanged,
           isEnabled: isEnabled,
           disabledOnTap: disabledOnTap,
-          changeCompletionDelay: changeCompletionDelay,
-          width: width,
-          isDialogExpanded: isDialogExpanded,
+          initialValue: initialValue,
         );
 
   const SearchableDropdown._({
@@ -147,24 +135,14 @@ class SearchableDropdown<T> extends StatefulWidget {
     this.futureRequest,
     this.paginatedRequest,
     this.requestItemCount,
-    this.changeCompletionDelay,
-    this.width,
-    this.isDialogExpanded = false,
+    this.initialValue,
   });
 
   //Is dropdown enabled
   final bool isEnabled;
 
-  //If its true dialog will be expanded all width of screen, otherwise dialog will be same size of dropdown.
-  final bool isDialogExpanded;
-
   /// Height of dropdown's dialog, default: context.deviceHeight*0.3.
   final double? dropDownMaxHeight;
-
-  final double? width;
-
-  /// Delay of dropdown's search callback after typing complete.
-  final Duration? changeCompletionDelay;
 
   /// Dropdowns margin padding with other widgets.
   final EdgeInsetsGeometry? margin;
@@ -214,6 +192,9 @@ class SearchableDropdown<T> extends StatefulWidget {
   /// Background decoration of dropdown, i.e. with this you can wrap dropdown with Card.
   final Widget Function(Widget child)? backgroundDecoration;
 
+  /// Initial selected value
+  final SearchableDropdownMenuItem<T>? initialValue;
+
   @override
   State<SearchableDropdown<T>> createState() => _SearchableDropdownState<T>();
 }
@@ -230,6 +211,9 @@ class _SearchableDropdownState<T> extends State<SearchableDropdown<T>> {
       ..requestItemCount = widget.requestItemCount ?? 0
       ..items = widget.items
       ..searchedItems.value = widget.items;
+    if (widget.initialValue != null) {
+      controller.selectedItem.value = widget.initialValue;
+    }
     for (final element in widget.items ?? <SearchableDropdownMenuItem<T>>[]) {
       if (element.value == widget.value) {
         controller.selectedItem.value = element;
@@ -257,13 +241,11 @@ class _SearchableDropdownState<T> extends State<SearchableDropdown<T>> {
       searchHintText: widget.searchHintText,
       trailingIcon: widget.trailingIcon,
       trailingClearIcon: widget.trailingClearIcon,
-      changeCompletionDelay: widget.changeCompletionDelay,
-      isDialogExpanded: widget.isDialogExpanded,
     );
 
     return SizedBox(
       key: controller.key,
-      width: widget.width ?? MediaQuery.of(context).size.width,
+      width: MediaQuery.of(context).size.width,
       child:
           widget.backgroundDecoration?.call(dropdownWidget) ?? dropdownWidget,
     );
@@ -274,7 +256,6 @@ class _DropDown<T> extends StatelessWidget {
   const _DropDown({
     required this.controller,
     required this.isEnabled,
-    required this.isDialogExpanded,
     this.leadingIcon,
     this.trailingIcon,
     this.trailingClearIcon,
@@ -287,13 +268,10 @@ class _DropDown<T> extends StatelessWidget {
     this.noRecordText,
     this.onChanged,
     this.searchHintText,
-    this.changeCompletionDelay,
   });
 
   final bool isEnabled;
-  final bool isDialogExpanded;
   final double? dropDownMaxHeight;
-  final Duration? changeCompletionDelay;
   final EdgeInsetsGeometry? margin;
   final Future<List<SearchableDropdownMenuItem<T>>?> Function()? futureRequest;
   final Future<List<SearchableDropdownMenuItem<T>>?> Function(
@@ -380,7 +358,7 @@ class _DropDown<T> extends StatelessWidget {
     final deviceHeight = context.deviceHeight;
     final dropdownGlobalPointBounds = controller.key.globalPaintBounds;
     final alertDialogMaxHeight = dropDownMaxHeight ?? deviceHeight * 0.35;
-    const dialogOffset = 35; //Dialog offset from dropdown
+    const dialogOffset = 5; //Dialog offset from dropdown
 
     final dropdownPositionFromBottom = dropdownGlobalPointBounds != null
         ? deviceHeight - dropdownGlobalPointBounds.bottom
@@ -422,19 +400,14 @@ class _DropDown<T> extends StatelessWidget {
         return Padding(
           padding: EdgeInsets.only(
             bottom: reCalculatePosition ?? 0,
-            left: isDialogExpanded ? 16 : dropdownGlobalPointBounds?.left ?? 0,
-            right: isDialogExpanded ? 16 : 0,
+            left: 16,
+            right: 16,
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.end,
-            crossAxisAlignment: isDialogExpanded
-                ? CrossAxisAlignment.center
-                : CrossAxisAlignment.start,
             children: [
               SizedBox(
                 height: alertDialogMaxHeight,
-                width:
-                    isDialogExpanded ? null : dropdownGlobalPointBounds?.width,
                 child: _DropDownCard(
                   controller: controller,
                   isReversed: isReversed,
@@ -442,7 +415,6 @@ class _DropDown<T> extends StatelessWidget {
                   onChanged: onChanged,
                   paginatedRequest: paginatedRequest,
                   searchHintText: searchHintText,
-                  changeCompletionDelay: changeCompletionDelay,
                 ),
               ),
             ],
@@ -489,11 +461,9 @@ class _DropDownCard<T> extends StatelessWidget {
     this.paginatedRequest,
     this.onChanged,
     this.noRecordText,
-    this.changeCompletionDelay,
   });
 
   final bool isReversed;
-  final Duration? changeCompletionDelay;
   final Future<List<SearchableDropdownMenuItem<T>>?> Function(
     int page,
     String? searchKey,
@@ -525,7 +495,6 @@ class _DropDownCard<T> extends StatelessWidget {
                   _DropDownSearchBar(
                     controller: controller,
                     searchHintText: searchHintText,
-                    changeCompletionDelay: changeCompletionDelay,
                   ),
                   Flexible(
                     child: _DropDownListView(
@@ -550,9 +519,7 @@ class _DropDownSearchBar<T> extends StatelessWidget {
   const _DropDownSearchBar({
     required this.controller,
     this.searchHintText,
-    this.changeCompletionDelay,
   });
-  final Duration? changeCompletionDelay;
   final SearchableDropdownController<T> controller;
   final String? searchHintText;
 
@@ -562,8 +529,7 @@ class _DropDownSearchBar<T> extends StatelessWidget {
       padding: const EdgeInsets.all(8),
       child: CustomSearchBar(
         focusNode: controller.searchFocusNode,
-        changeCompletionDelay:
-            changeCompletionDelay ?? const Duration(milliseconds: 200),
+        changeCompletionDelay: const Duration(milliseconds: 200),
         hintText: searchHintText ?? 'Search',
         isOutlined: true,
         leadingIcon: const Icon(Icons.search, size: 24),
@@ -623,45 +589,42 @@ class _DropDownListView<T> extends StatelessWidget {
                   : Scrollbar(
                       thumbVisibility: true,
                       controller: controller.scrollController,
-                      child: NotificationListener(
-                        child: ListView.builder(
-                          controller: controller.scrollController,
-                          padding: listViewPadding(isReversed: isReversed),
-                          itemCount: itemList.length + 1,
-                          shrinkWrap: true,
-                          reverse: isReversed,
-                          itemBuilder: (context, index) {
-                            if (index < itemList.length) {
-                              final item = itemList.elementAt(index);
-                              return CustomInkwell(
-                                child: item.child,
-                                onTap: () {
-                                  controller.selectedItem.value = item;
-                                  onChanged?.call(item.value);
-                                  Navigator.pop(context);
-                                  item.onTap?.call();
-                                },
-                              );
-                            } else {
-                              return ValueListenableBuilder(
-                                valueListenable: controller.status,
-                                builder: (
-                                  context,
-                                  SearchableDropdownStatus state,
-                                  child,
-                                ) {
-                                  if (state == SearchableDropdownStatus.busy) {
-                                    return const Center(
-                                      child:
-                                          CircularProgressIndicator.adaptive(),
-                                    );
-                                  }
-                                  return const SizedBox.shrink();
-                                },
-                              );
-                            }
-                          },
-                        ),
+                      child: ListView.builder(
+                        controller: controller.scrollController,
+                        padding: listViewPadding(isReversed: isReversed),
+                        itemCount: itemList.length + 1,
+                        shrinkWrap: true,
+                        reverse: isReversed,
+                        itemBuilder: (context, index) {
+                          if (index < itemList.length) {
+                            final item = itemList.elementAt(index);
+                            return CustomInkwell(
+                              child: item.child,
+                              onTap: () {
+                                controller.selectedItem.value = item;
+                                onChanged?.call(item.value);
+                                Navigator.pop(context);
+                                item.onTap?.call();
+                              },
+                            );
+                          } else {
+                            return ValueListenableBuilder(
+                              valueListenable: controller.status,
+                              builder: (
+                                context,
+                                SearchableDropdownStatus state,
+                                child,
+                              ) {
+                                if (state == SearchableDropdownStatus.busy) {
+                                  return const Center(
+                                    child: CircularProgressIndicator.adaptive(),
+                                  );
+                                }
+                                return const SizedBox.shrink();
+                              },
+                            );
+                          }
+                        },
                       ),
                     ),
     );
