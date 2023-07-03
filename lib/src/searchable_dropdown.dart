@@ -502,26 +502,30 @@ class _DropDownCard<T> extends StatelessWidget {
             ),
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                verticalDirection:
-                    isReversed ? VerticalDirection.up : VerticalDirection.down,
-                children: [
-                  if (showSearch)
-                    _DropDownSearchBar(
-                      controller: controller,
-                      searchHintText: searchHintText,
+              child: SizedBox(
+                width: double.infinity,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  verticalDirection: isReversed
+                      ? VerticalDirection.up
+                      : VerticalDirection.down,
+                  children: [
+                    if (showSearch)
+                      _DropDownSearchBar(
+                        controller: controller,
+                        searchHintText: searchHintText,
+                      ),
+                    Flexible(
+                      child: _DropDownListView(
+                        controller: controller,
+                        paginatedRequest: paginatedRequest,
+                        isReversed: isReversed,
+                        noRecordText: noRecordText,
+                        onChanged: onChanged,
+                      ),
                     ),
-                  Flexible(
-                    child: _DropDownListView(
-                      controller: controller,
-                      paginatedRequest: paginatedRequest,
-                      isReversed: isReversed,
-                      noRecordText: noRecordText,
-                      onChanged: onChanged,
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
